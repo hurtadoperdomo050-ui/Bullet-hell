@@ -1,0 +1,218 @@
+import pygame
+import math
+import random
+
+pygame.init()
+pygame.mixer.init()
+
+X = 800
+Y = 600
+pantalla = pygame.display.set_mode((X, Y))
+pygame.display.set_caption("The Strongest in History")
+reloj = pygame.time.Clock()
+FPS = 30
+
+pygame.mixer.music.load("DBG.mp3")
+
+alma = pygame.image.load("Undertale_Red_SOUL.webp")
+alma_img = pygame.transform.scale(alma, (20, 20))
+
+F = pygame.font.SysFont("Arial", 150)
+F2 = pygame.font.SysFont("Arial", 50)
+F3 = pygame.font.SysFont("Arial", 50)
+F4 = pygame.font.SysFont("Arial", 25)
+
+negro = (0, 0, 0)
+blanco = (255, 255, 255)
+gris = (120, 120, 120)
+amarillo = (255, 255, 0)
+
+activo = True
+escena = "menu"  
+mensaje = True
+tiempo_inicio = 0
+
+subfase = "dialogo"
+turno_oponente = "ataque"
+turno_esquive = "esquive"
+turno_player  = "contraatque"
+
+proyectiles = []
+balas = {
+    "rect": pygame.Rect(390, 200, 10, 15),
+    "vel_y": 4
+}
+proyectiles.append(balas)
+
+hitbox = pygame.Rect(300, 330, 200, 200)
+borde_X, borde_Y = 392, 430
+tamano = 15
+V = 4
+
+texto = F.render("MISS", True, blanco)
+super_btn = F2.render("Fight", True, blanco)
+recta = super_btn.get_rect(topleft=(350, 200))
+super2_btn = F3.render("Quit", True, blanco)
+recta2 = super2_btn.get_rect(topleft=(350, 250)) 
+texto_boss = F4.render("Preparate para Morir...", True, blanco)
+
+while activo:
+    pos_mouse = pygame.mouse.get_pos()
+    teclas = pygame.key.get_pressed()
+    
+    pantalla.fill(negro)  
+
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            activo = False
+        elif evento.type == pygame.MOUSEBUTTONDOWN:
+            if evento.button == 1:
+                if escena == "menu":
+                    if recta.collidepoint(evento.pos):
+                        escena = "combate" 
+                        pygame.mixer.music.play(-1)
+                        tiempo_inicio = pygame.time.get_ticks()  
+                    elif recta2.collidepoint(evento.pos):
+                        activo = False 
+
+    NX = borde_X
+    NY = borde_Y
+    if teclas[pygame.K_LEFT]:
+        NX -= V
+    if teclas[pygame.K_RIGHT]:
+        NX += V
+    if teclas[pygame.K_DOWN]:
+        NY += V
+    if teclas[pygame.K_UP]:
+        NY -= V
+    
+    if escena == "menu": 
+        if recta.collidepoint(pos_mouse):
+            super_btn = F2.render("Fight", True, gris)
+        else:
+            super_btn = F2.render("Fight", True, blanco)
+
+        if recta2.collidepoint(pos_mouse):
+            super2_btn = F3.render("Quit", True, gris)
+        else:
+            super2_btn = F3.render("Quit", True, blanco)
+
+        pantalla.blit(texto, (230, 40))
+        pantalla.blit(super_btn, (350, 200))
+        pantalla.blit(super2_btn, (350, 250))
+
+    elif escena == "combate":
+        
+        if mensaje and (pygame.time.get_ticks() - tiempo_inicio > 3500):
+            mensaje = False  
+               
+        if mensaje:
+            pantalla.blit(texto_boss, (90, 250))
+       
+        pygame.draw.rect(pantalla, blanco, (300, 330, 200, 200), 5) 
+        
+        cuadrado2 = pygame.Rect(NX, NY, tamano, tamano)
+        if hitbox.contains(cuadrado2):
+            borde_X = NX
+            borde_Y = NY
+            
+        pantalla.blit(alma_img, (borde_X, borde_Y))
+         
+        for p in proyectiles:
+            p["rect"].y += p["vel_y"] 
+            pygame.draw.arc(pantalla, blanco, p["rect"], 0, 3.9, 9)
+             
+            if cuadrado2.colliderect(p["rect"]):
+                print("¡Auch! El arco cortó al alma")
+        
+        # --- RESPIRACIONES INDIVIDUALES PARA EL JEFE ---
+        resp_cabeza = math.sin(pygame.time.get_ticks() * 0.005) * 3
+        resp_tronco = math.sin(pygame.time.get_ticks() * 0.004) * 2
+        resp_brazos = math.sin(pygame.time.get_ticks() * 0.006 + 1) * 3
+
+        # --- CABEZA ---
+        pygame.draw.circle(pantalla, amarillo, [395, 65 + resp_cabeza], 20)
+
+        # --- PECHO / TORSO ANCHO (Estilo Heian Musculoso) ---
+        pygame.draw.rect(pantalla, amarillo, [355, 85 + resp_tronco, 80, 55], 0) 
+
+        # --- ABDOMEN FUERTE ---
+        pygame.draw.rect(pantalla, amarillo, [365, 140 + resp_tronco, 60, 45], 0) 
+
+        # --- PIERNAS ROBUSTAS Y LARGAS ---
+        pygame.draw.rect(pantalla, amarillo, [370, 185 + resp_tronco, 16, 50], 0) # Muslo izq
+        pygame.draw.rect(pantalla, amarillo, [372, 235 + resp_tronco, 13, 45], 0) # Pantorrilla izq
+        pygame.draw.rect(pantalla, amarillo, [404, 185 + resp_tronco, 16, 50], 0) # Muslo der
+        pygame.draw.rect(pantalla, amarillo, [405, 235 + resp_tronco, 13, 45], 0) # Pantorrilla der
+        
+        # --- BRAZO SUPERIOR IZQUIERDO ---
+        # Bíceps (Ancho saliendo del hombro)
+        pygame.draw.polygon(pantalla, amarillo, [
+            (355, 90 + resp_tronco),   # Hombro arriba
+            (355, 106 + resp_tronco),  # Hombro abajo (Ancho)
+            (325, 112 + resp_brazos),  # Codo abajo
+            (325, 102 + resp_brazos)   # Codo arriba
+        ])
+        # Antebrazo (Se afina hacia la mano)
+        pygame.draw.polygon(pantalla, amarillo, [
+            (325, 102 + resp_brazos),
+            (325, 112 + resp_brazos),
+            (300, 130 + resp_brazos),  # Muñeca/Mano abajo
+            (300, 122 + resp_brazos)   # Muñeca/Mano arriba
+        ])
+
+        # --- BRAZO INFERIOR IZQUIERDO ---
+        pygame.draw.polygon(pantalla, amarillo, [
+            (355, 120 + resp_tronco),
+            (355, 136 + resp_tronco),
+            (320, 145 + resp_brazos),
+            (320, 135 + resp_brazos)
+        ])
+        pygame.draw.polygon(pantalla, amarillo, [
+            (320, 135 + resp_brazos),
+            (320, 145 + resp_brazos),
+            (295, 165 + resp_brazos),
+            (295, 157 + resp_brazos)
+        ])
+
+        # --- BRAZO SUPERIOR DERECHO ---
+        pygame.draw.polygon(pantalla, amarillo, [
+            (435, 90 + resp_tronco),
+            (435, 106 + resp_tronco),
+            (465, 112 + resp_brazos),
+            (465, 102 + resp_brazos)
+        ])
+        pygame.draw.polygon(pantalla, amarillo, [
+            (465, 102 + resp_brazos),
+            (465, 112 + resp_brazos),
+            (490, 130 + resp_brazos),
+            (490, 122 + resp_brazos)
+        ])
+
+        # --- BRAZO INFERIOR DERECHO ---
+        pygame.draw.polygon(pantalla, amarillo, [
+            (435, 120 + resp_tronco),
+            (435, 136 + resp_tronco),
+            (470, 145 + resp_brazos),
+            (470, 135 + resp_brazos)
+        ])
+        pygame.draw.polygon(pantalla, amarillo, [
+            (470, 135 + resp_brazos),
+            (470, 145 + resp_brazos),
+            (495, 165 + resp_brazos),
+            (495, 157 + resp_brazos)
+        ])
+
+        if turno_oponente:
+            if cuadrado2.colliderect(balas["rect"]):     
+                pygame.draw.arc(pantalla, blanco, (balas["rect"].x, balas["rect"].y, 40, 40), 0, 3.14, 3)                           
+                pygame.draw.rect(pantalla, blanco, (300, 330, 200, 200), 5)
+       
+        if mensaje:
+            pantalla.blit(texto_boss, (90, 250)) 
+            pygame.draw.rect(pantalla, blanco, (300, 330, 200, 200), 5)
+            
+    reloj.tick(FPS)
+    pygame.display.flip()        
+
+pygame.quit()
